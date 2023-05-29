@@ -5,6 +5,8 @@ go 1.19
 require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
+	github.com/streadway/amqp v1.0.0
+	go.starlark.net v0.0.0-20230525235612-a134d8f9ddca
 	golang.org/x/net v0.10.0 // indirect
 	golang.org/x/sys v0.8.0 // indirect
 	golang.org/x/text v0.9.0 // indirect
