@@ -8,6 +8,15 @@ message Message {
     string content = 2;
 }
 
+message Request {
+    Message message = 1;
+}
+
+message Response {
+    int32 status = 1;
+    string message = 2;
+}
+
 service ChatService {
     rpc Broadcast(stream Message) returns (stream Message) {}
     rpc SendMessage(Message) returns (Message) {}

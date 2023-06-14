@@ -6,11 +6,13 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"sync"
+	"time"
 
 	"google.golang.org/grpc"
 
-	chat "github.com/AlexanderLukashuk/chatapp/server/proto" // Import the generated protobuf code
+	chat "github.com/AlexanderLukashuk/chatapp/server/proto"
 )
 
 func receiveMessages(stream chat.ChatService_BroadcastClient, wg *sync.WaitGroup) {
@@ -23,8 +25,35 @@ func receiveMessages(stream chat.ChatService_BroadcastClient, wg *sync.WaitGroup
 			return
 		}
 
-		log.Printf("[%s]: %s", message.Username, message.Content)
+		// timestamp := message.GetTimestamp()
+		username := message.GetUsername()
+		content := message.GetContent()
+		// t := timestampToTime(timestamp)
+		// log.Printf("%s: %s: %s", username, content)
+		log.Printf("%s: %s", username, content)
 	}
+}
+
+func timestampToTime(timestamp int64) time.Time {
+	return time.Unix(timestamp, 0)
+}
+
+func doSendMessage(c chat.ChatServiceClient, msg *chat.Message) {
+	ctx := context.Background()
+
+	request := &chat.Request{Message: msg}
+	response, err := c.SendMessage(ctx, request.Message)
+
+	if err != nil {
+		log.Fatalf("Error while calling send RPC %v", err)
+	}
+
+	// timestamp := response.GetTimestamp()
+	username := response.GetUsername()
+	content := response.GetContent()
+	// t := timestampToTime(timestamp)
+	// log.Printf("%s: %s: %s", t.Format("02/01/2006 15:04"), username, content)
+	log.Printf("%s: %s", username, content)
 }
 
 func main() {
@@ -49,18 +78,23 @@ func main() {
 
 	fmt.Print("Enter your username: ")
 	username, _ := reader.ReadString('\n')
+	username = strings.TrimSpace(username)
 
 	fmt.Println("Type your message and press Enter to send. Type 'quit' to exit.")
 
 	for {
 		message, _ := reader.ReadString('\n')
-		message = message[:len(message)-1] // Remove newline character
+		message = strings.TrimSpace(message)
 
 		if message == "quit" {
 			break
 		}
 
-		// Send the message to the server
+		doSendMessage(client, &chat.Message{
+			Username: username,
+			Content:  message,
+		})
+
 		if err := stream.Send(&chat.Message{
 			Username: username,
 			Content:  message,

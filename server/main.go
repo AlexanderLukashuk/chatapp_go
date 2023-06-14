@@ -10,7 +10,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 
-	// chat "github.com/AlexanderLukashuk/chatapp/server" // Import the generated protobuf code
 	chat "github.com/AlexanderLukashuk/chatapp/server/proto"
 )
 
@@ -21,7 +20,6 @@ type chatServer struct {
 func (s *chatServer) Broadcast(stream chat.ChatService_BroadcastServer) error {
 	log.Println("New client connected for broadcasting")
 
-	// Send previous messages to the client
 	s.sendPreviousMessages(stream)
 
 	for {
@@ -30,29 +28,28 @@ func (s *chatServer) Broadcast(stream chat.ChatService_BroadcastServer) error {
 			return err
 		}
 
-		// Store the message in RabbitMQ
+		// message.Timestamp = time.Now().Unix()
+
 		if err := s.publishMessage(message); err != nil {
 			log.Printf("Failed to publish message: %v", err)
 		}
 
-		// Broadcast the message to all connected clients
 		s.broadcastMessage(message)
 	}
 }
 
 func (s *chatServer) SendMessage(ctx context.Context, message *chat.Message) (*chat.Message, error) {
-	// Store the message in RabbitMQ
+	// message.Timestamp = time.Now().Unix()
+
 	if err := s.publishMessage(message); err != nil {
 		log.Printf("Failed to publish message: %v", err)
 		return nil, err
 	}
 
-	// Send the message back to the sender
 	return message, nil
 }
 
 func (s *chatServer) sendPreviousMessages(stream chat.ChatService_BroadcastServer) {
-	// Connect to RabbitMQ
 	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
 	if err != nil {
 		log.Fatalf("Failed to connect to RabbitMQ: %v", err)
@@ -90,7 +87,6 @@ func (s *chatServer) sendPreviousMessages(stream chat.ChatService_BroadcastServe
 		log.Fatalf("Failed to register a consumer: %v", err)
 	}
 
-	// Send previous messages to the client
 	for msg := range msgs {
 		var message chat.Message
 		if err := proto.Unmarshal(msg.Body, &message); err != nil {
@@ -106,7 +102,6 @@ func (s *chatServer) sendPreviousMessages(stream chat.ChatService_BroadcastServe
 }
 
 func (s *chatServer) broadcastMessage(message *chat.Message) {
-	// Connect to RabbitMQ
 	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
 	if err != nil {
 		log.Fatalf("Failed to connect to RabbitMQ: %v", err)
@@ -151,7 +146,6 @@ func (s *chatServer) broadcastMessage(message *chat.Message) {
 }
 
 func (s *chatServer) publishMessage(message *chat.Message) error {
-	// Connect to RabbitMQ
 	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
 	if err != nil {
 		return fmt.Errorf("failed to connect to RabbitMQ: %v", err)
@@ -202,9 +196,9 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to listen: %v", err)
 	}
-
+	chatSrv := chatServer{}
 	grpcServer := grpc.NewServer()
-	chat.RegisterChatServiceServer(grpcServer, &chatServer{})
+	chat.RegisterChatServiceServer(grpcServer, &chatSrv)
 
 	log.Println("Chat server started")
 	if err := grpcServer.Serve(lis); err != nil {
